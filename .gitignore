@@ -1,2 +1,8 @@
 .env
 .venv/
+__pycache__/
+*.pyc
+chroma_db/
+backend/users.json
+pdf/
+.DS_Store

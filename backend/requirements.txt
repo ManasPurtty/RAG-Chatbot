@@ -1,14 +1,22 @@
+# Core API
 fastapi
-uvicorn
-streamlit
+uvicorn[standard]
+python-multipart
+python-dotenv
+
+# LangChain & AI
 langchain
+langchain-core
 langchain-community
-langchain-google-genai
 langchain-huggingface
+langchain-google-genai
+langchain-qdrant
+qdrant-client
 chromadb
 sentence-transformers
 pypdf
-python-dotenv
-google-generativeai
-transformers
-torch
+
+# Auth & Security
+python-jose[cryptography]
+passlib[bcrypt]
+cryptography

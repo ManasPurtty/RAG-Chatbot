@@ -1,0 +1,36 @@
+services:
+  # Backend API service
+  - type: web
+    name: secure-rag-backend
+    env: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_COLLECTION_NAME
+        value: secure_rag_documents
+
+  # Frontend Streamlit service
+  - type: web
+    name: secure-rag-frontend
+    env: docker
+    dockerContext: ./frontend
+    dockerfilePath: ./frontend/Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: BACKEND_URL
+        value: https://secure-rag-backend.onrender.com
