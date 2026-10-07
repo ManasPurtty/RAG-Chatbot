@@ -69,6 +69,7 @@ if QDRANT_URL:
         port=443,
         api_key=QDRANT_API_KEY,
         prefer_grpc=False,
+        timeout=60,
     )
     secure_log("QDRANT_INIT", host=QDRANT_URL)
 else:
@@ -224,11 +225,24 @@ async def query_rag(
             ]
         )
 
-    raw_docs = vector_store.similarity_search(
-        sanitized_question,
-        k=5,
-        filter=qdrant_filter,
-    )
+    raw_docs = []
+    for attempt in range(3):
+        try:
+            raw_docs = vector_store.similarity_search(
+                sanitized_question,
+                k=5,
+                filter=qdrant_filter,
+            )
+            break
+        except Exception as exc:
+            if attempt == 2:
+                secure_log("RETRIEVAL_ERROR", username=current_user.username, error=str(exc))
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Vector store search failed: {exc}",
+                )
+            import time
+            time.sleep(1.0)
 
     # ── Step 4: Context minimisation ──────────────────────────────────────────
     docs = minimize_context(raw_docs, max_chars=3000)
@@ -339,8 +353,27 @@ async def upload_pdf(
             "source_file": file.filename,
         })
 
-    # ── Add to Qdrant Vector Store ─────────────────────────────────────────────
-    vector_store.add_documents(chunks)
+    # ── Add to Qdrant Vector Store with batching & retries ─────────────────────
+    batch_size = 20
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i : i + batch_size]
+        uploaded = False
+        last_exc = None
+        for attempt in range(3):
+            try:
+                vector_store.add_documents(batch)
+                uploaded = True
+                break
+            except Exception as exc:
+                last_exc = exc
+                import time
+                time.sleep(1.5 * (attempt + 1))
+        if not uploaded:
+            secure_log("UPLOAD_FAILED_BATCH", username=current_user.username, error=str(last_exc))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to store chunks in Qdrant Cloud: {last_exc}",
+            )
 
     secure_log("UPLOAD_DONE", username=current_user.username, filename=file.filename, chunks=len(chunks))
 
