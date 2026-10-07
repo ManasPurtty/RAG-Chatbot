@@ -64,7 +64,7 @@ QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION_NAME", "secure_rag_documents")
 embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 if QDRANT_URL:
-    qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    qdrant_client = QdrantClient(url=QDRANT_URL, port=443, api_key=QDRANT_API_KEY)
     secure_log("QDRANT_INIT", host=QDRANT_URL)
 else:
     qdrant_client = QdrantClient(path="../qdrant_db")

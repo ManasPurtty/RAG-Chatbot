@@ -62,7 +62,7 @@ for chunk in chunks:
 # 4. Connect to Qdrant
 if QDRANT_URL:
     print(f"Connecting to Qdrant Cloud at {QDRANT_URL}...")
-    qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    qdrant_client = QdrantClient(url=QDRANT_URL, port=443, api_key=QDRANT_API_KEY)
 else:
     print("Connecting to local on-disk Qdrant at ../qdrant_db...")
     qdrant_client = QdrantClient(path="../qdrant_db")
