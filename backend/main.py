@@ -64,7 +64,12 @@ QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION_NAME", "secure_rag_documents")
 embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 if QDRANT_URL:
-    qdrant_client = QdrantClient(url=QDRANT_URL, port=443, api_key=QDRANT_API_KEY)
+    qdrant_client = QdrantClient(
+        url=QDRANT_URL,
+        port=443,
+        api_key=QDRANT_API_KEY,
+        prefer_grpc=False,
+    )
     secure_log("QDRANT_INIT", host=QDRANT_URL)
 else:
     qdrant_client = QdrantClient(path="../qdrant_db")
@@ -312,7 +317,11 @@ async def upload_pdf(
         loader = PyPDFLoader(tmp_path)
         raw_docs = loader.load()
     finally:
-        os.unlink(tmp_path)   # always delete temp file
+        try:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+        except Exception:
+            pass
 
     # ── Chunk documents ────────────────────────────────────────────────────────
     chunks = splitter.split_documents(raw_docs)

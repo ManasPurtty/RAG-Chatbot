@@ -143,28 +143,38 @@ with st.sidebar:
         if st.button("Upload & Index"):
             with st.spinner("Uploading, encrypting, and indexing…"):
                 try:
+                    file_bytes = uploaded_file.getvalue()
                     resp = requests.post(
                         f"{UPLOAD_URL}?access_level={access_level}",
-                        files={"file": (uploaded_file.name, uploaded_file, "application/pdf")},
+                        files={"file": (uploaded_file.name, file_bytes, "application/pdf")},
                         headers=auth_header(),
-                        timeout=120,
+                        timeout=180,
                     )
                     if resp.status_code == 200:
-                        data = resp.json()
-                        st.success(
-                            f"✅ Indexed {data['chunks_added']} chunks  "
-                            f"| Owner: `{data['owner']}`  "
-                            f"| Level: `{data['access_level']}`"
-                        )
+                        try:
+                            data = resp.json()
+                            st.success(
+                                f"✅ Indexed {data['chunks_added']} chunks  "
+                                f"| Owner: `{data['owner']}`  "
+                                f"| Level: `{data['access_level']}`"
+                            )
+                        except Exception:
+                            st.success("✅ Uploaded and indexed successfully!")
                         st.session_state.uploader_key += 1
                         st.rerun()
                     elif resp.status_code == 401:
                         st.error("Session expired. Please log in again.")
                         logout()
                     else:
-                        st.error(f"Upload failed: {resp.json().get('detail', resp.text)}")
+                        try:
+                            detail = resp.json().get("detail", resp.text[:300])
+                        except Exception:
+                            detail = resp.text[:300]
+                        st.error(f"Upload failed (HTTP {resp.status_code}): {detail}")
+                except requests.exceptions.Timeout:
+                    st.error("Upload timed out while processing and embedding documents.")
                 except Exception as e:
-                    st.error(f"Connection error: {e}")
+                    st.error(f"Upload error: {e}")
 
     st.divider()
     if st.button("🚪 Logout"):
